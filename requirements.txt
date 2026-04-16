@@ -1,0 +1,8 @@
+# requirements.txt
+# =================
+# List of Python packages this project depends on.
+# Install all at once with:
+#   pip install -r requirements.txt
+
+Django>=4.2,<5.0          # The main web framework
+djangorestframework>=3.14  # DRF — adds REST API support to Django

@@ -1,0 +1,63 @@
+<!--
+  task_form.html
+  ===============
+  Reused for BOTH creating AND updating tasks.
+  The view passes 'action' = "Create" or "Update" to distinguish them.
+-->
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Task — Task Manager{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card">
+        
+        <!-- Dynamic heading based on 'action' context variable -->
+        <h1 class="form-title">
+            {% if action == 'Create' %}➕ New Task{% else %}✏️ Edit Task{% endif %}
+        </h1>
+
+        <form method="post" action="">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <!-- form.title.label = "Task Title" (from our TaskForm) -->
+                <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                <!-- Renders: <input type="text" class="form-input" placeholder="..." ...> -->
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div class="field-errors">{{ form.title.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <div class="field-errors">{{ form.description.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.deadline.id_for_label }}">{{ form.deadline.label }}</label>
+                {{ form.deadline }}
+                {% if form.deadline.errors %}
+                    <div class="field-errors">{{ form.deadline.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Show any form-wide errors -->
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    {% if action == 'Create' %}Create Task{% else %}Save Changes{% endif %}
+                </button>
+                <a href="{% url 'task_list' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
