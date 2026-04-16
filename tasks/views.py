@@ -12,75 +12,43 @@ This file contains TWO types of views:
 """
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
+from django.utils import timezone
+import calendar
+from datetime import date
 
-from .models import Task
+from .models import Task, SharedTask
 from .forms import RegisterForm, TaskForm
 
 
-# ═══════════════════════════════════════════════════════════════
-# SECTION A: HTML VIEWS (Regular web browser views)
-# ═══════════════════════════════════════════════════════════════
-
-# ─── AUTHENTICATION VIEWS ────────────────────────────────────────────────────
+# ─── AUTH VIEWS ──────────────────────────────────────────────────────────────
 
 def register_view(request):
-    """
-    Handle user registration.
-    
-    GET  → Show the blank registration form
-    POST → Process the form data, create user, log them in
-    """
-    # If the user is already logged in, send them to the task list
     if request.user.is_authenticated:
         return redirect('task_list')
-
     if request.method == 'POST':
-        # request.POST contains the submitted form data
         form = RegisterForm(request.POST)
-
         if form.is_valid():
-            # Save the new user to the database
             user = form.save()
-
-            # Log the user in immediately after registration
             login(request, user)
-
-            # Add a success flash message
             messages.success(request, f'Account created! Welcome, {user.username}!')
-
-            # Redirect to the task list page
             return redirect('task_list')
         else:
-            # Form has errors — they will be shown in the template
             messages.error(request, 'Please fix the errors below.')
     else:
-        # GET request — show an empty form
         form = RegisterForm()
-
-    # render() combines a template with data (context) and returns HTML
     return render(request, 'tasks/register.html', {'form': form})
 
 
 def login_view(request):
-    """
-    Handle user login.
-    
-    GET  → Show the login form
-    POST → Validate credentials and log the user in
-    """
     if request.user.is_authenticated:
         return redirect('task_list')
-
     if request.method == 'POST':
-        # AuthenticationForm is Django's built-in login form
         form = AuthenticationForm(request, data=request.POST)
-
         if form.is_valid():
-            # Get the authenticated user object from the form
             user = form.get_user()
             login(request, user)
             messages.success(request, f'Welcome back, {user.username}!')
@@ -89,15 +57,10 @@ def login_view(request):
             messages.error(request, 'Invalid username or password.')
     else:
         form = AuthenticationForm()
-
     return render(request, 'tasks/login.html', {'form': form})
 
 
 def logout_view(request):
-    """
-    Log the user out and redirect to login page.
-    Only handle POST requests for CSRF security.
-    """
     if request.method == 'POST':
         logout(request)
         messages.info(request, 'You have been logged out.')
@@ -106,28 +69,18 @@ def logout_view(request):
 
 # ─── TASK VIEWS ──────────────────────────────────────────────────────────────
 
-@login_required  # ← This decorator blocks unauthenticated users!
-                  #   If not logged in, redirects to LOGIN_URL from settings.py
+@login_required
 def task_list_view(request):
-    """
-    Show all tasks for the currently logged-in user.
-    Also supports filtering by ?filter=completed or ?filter=pending
-    """
-    # request.user = the currently logged-in User object
-    # .tasks = the related_name we set in the ForeignKey
-    # This automatically filters to only THIS user's tasks (security!)
     tasks = Task.objects.filter(user=request.user)
-
-    # Optional filtering via URL query parameter: /tasks/?filter=completed
     filter_param = request.GET.get('filter', 'all')
     if filter_param == 'completed':
         tasks = tasks.filter(completed=True)
     elif filter_param == 'pending':
         tasks = tasks.filter(completed=False)
 
-    # Count for display in the template
-    total_count = Task.objects.filter(user=request.user).count()
-    completed_count = Task.objects.filter(user=request.user, completed=True).count()
+    all_tasks = Task.objects.filter(user=request.user)
+    total_count = all_tasks.count()
+    completed_count = all_tasks.filter(completed=True).count()
     pending_count = total_count - completed_count
 
     context = {
@@ -140,119 +93,159 @@ def task_list_view(request):
     return render(request, 'tasks/task_list.html', context)
 
 
+def _handle_share(task, share_users, current_user):
+    """
+    Helper: update sharing for a task.
+    Removes old shares and adds new ones, excluding the task owner.
+    """
+    # Remove all existing shares
+    SharedTask.objects.filter(task=task).delete()
+    # Add new shares (can't share with yourself)
+    for user in share_users:
+        if user != current_user:
+            SharedTask.objects.create(task=task, shared_with=user)
+
+
 @login_required
 def task_create_view(request):
-    """
-    Create a new task.
-    
-    GET  → Show empty task form
-    POST → Save new task to database
-    """
     if request.method == 'POST':
         form = TaskForm(request.POST)
-
         if form.is_valid():
-            # commit=False means: create the Task object in memory
-            # but DON'T save to database yet (we need to add the user first)
             task = form.save(commit=False)
-
-            # Assign the current logged-in user to this task
             task.user = request.user
-
-            # NOW save to the database (with user set)
             task.save()
-
-            messages.success(request, f'Task "{task.title}" created successfully!')
+            # Handle sharing
+            share_users = form.cleaned_data.get('share_with', [])
+            _handle_share(task, share_users, request.user)
+            if share_users:
+                names = ', '.join(u.username for u in share_users)
+                messages.success(request, f'Task created and shared with: {names}')
+            else:
+                messages.success(request, f'Task "{task.title}" created!')
             return redirect('task_list')
         else:
             messages.error(request, 'Please fix the errors below.')
     else:
         form = TaskForm()
-
-    return render(request, 'tasks/task_form.html', {
-        'form': form,
-        'action': 'Create',  # Used in the template to show "Create Task"
-    })
+    return render(request, 'tasks/task_form.html', {'form': form, 'action': 'Create'})
 
 
 @login_required
 def task_update_view(request, pk):
-    """
-    Update an existing task.
-    
-    pk = primary key (the task's ID in the URL, e.g. /tasks/5/edit/)
-    
-    get_object_or_404: tries to find the Task with this id AND this user.
-    If not found (wrong id OR wrong user), returns a 404 error.
-    This prevents users from editing other people's tasks!
-    """
     task = get_object_or_404(Task, pk=pk, user=request.user)
-
     if request.method == 'POST':
-        # Pass instance=task so the form updates the existing task
-        # instead of creating a new one
         form = TaskForm(request.POST, instance=task)
-
         if form.is_valid():
             form.save()
-            messages.success(request, f'Task "{task.title}" updated successfully!')
+            share_users = form.cleaned_data.get('share_with', [])
+            _handle_share(task, share_users, request.user)
+            messages.success(request, f'Task "{task.title}" updated!')
             return redirect('task_list')
         else:
             messages.error(request, 'Please fix the errors below.')
     else:
-        # Pre-fill the form with the task's current values
         form = TaskForm(instance=task)
-
-    return render(request, 'tasks/task_form.html', {
-        'form': form,
-        'action': 'Update',
-        'task': task,
-    })
+    return render(request, 'tasks/task_form.html', {'form': form, 'action': 'Update', 'task': task})
 
 
 @login_required
 def task_delete_view(request, pk):
-    """
-    Delete a task.
-    
-    GET  → Show confirmation page
-    POST → Actually delete the task
-    
-    Always confirm before deleting! Never delete on a GET request.
-    """
     task = get_object_or_404(Task, pk=pk, user=request.user)
-
     if request.method == 'POST':
-        task_title = task.title  # Save title before deletion for the message
+        title = task.title
         task.delete()
-        messages.success(request, f'Task "{task_title}" deleted.')
+        messages.success(request, f'Task "{title}" deleted.')
         return redirect('task_list')
-
     return render(request, 'tasks/task_confirm_delete.html', {'task': task})
 
 
 @login_required
 def task_toggle_view(request, pk):
-    """
-    Toggle the completed status of a task (completed ↔ not completed).
-    Only handles POST for security.
-    """
-    task = get_object_or_404(Task, pk=pk, user=request.user)
+    # Allow toggling own tasks OR tasks shared with you
+    task = Task.objects.filter(pk=pk).filter(
+        user=request.user
+    ).first() or Task.objects.filter(pk=pk, shared_with=request.user).first()
+
+    if not task:
+        messages.error(request, 'Task not found.')
+        return redirect('task_list')
 
     if request.method == 'POST':
-        # Flip the boolean value
         task.completed = not task.completed
         task.save()
         status = "completed" if task.completed else "marked as pending"
         messages.success(request, f'Task "{task.title}" {status}.')
+    return redirect(request.META.get('HTTP_REFERER', 'task_list'))
 
-    return redirect('task_list')
+
+# ─── CALENDAR VIEW ───────────────────────────────────────────────────────────
+
+@login_required
+def calendar_view(request):
+    # Get year/month from URL params, default to current month
+    today = date.today()
+    year = int(request.GET.get('year', today.year))
+    month = int(request.GET.get('month', today.month))
+
+    # Navigate prev/next month
+    if month < 1:
+        month = 12
+        year -= 1
+    elif month > 12:
+        month = 1
+        year += 1
+
+    # Get all tasks with deadlines in this month that belong to
+    # the user (own tasks OR shared with them)
+    own_tasks = Task.objects.filter(
+        user=request.user,
+        deadline__year=year,
+        deadline__month=month,
+    )
+    shared_tasks = Task.objects.filter(
+        shared_with=request.user,
+        deadline__year=year,
+        deadline__month=month,
+    )
+    # Combine into one list
+    all_tasks = list(own_tasks) + list(shared_tasks)
+
+    # Build a dict: {day_number: [task, task, ...]}
+    tasks_by_day = {}
+    for task in all_tasks:
+        day = task.deadline.day
+        if day not in tasks_by_day:
+            tasks_by_day[day] = []
+        tasks_by_day[day].append(task)
+
+    # Build calendar grid
+    # calendar.monthcalendar returns list of weeks,
+    # each week is [Mon, Tue, Wed, Thu, Fri, Sat, Sun] with 0 for empty days
+    cal = calendar.monthcalendar(year, month)
+
+    # Previous and next month links
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+
+    context = {
+        'year': year,
+        'month': month,
+        'month_name': calendar.month_name[month],
+        'cal': cal,
+        'tasks_by_day': tasks_by_day,
+        'today': today,
+        'prev_month': prev_month,
+        'prev_year': prev_year,
+        'next_month': next_month,
+        'next_year': next_year,
+        'day_names': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    }
+    return render(request, 'tasks/calendar.html', context)
 
 
-# ═══════════════════════════════════════════════════════════════
-# SECTION B: API VIEWS (Django REST Framework)
-# ═══════════════════════════════════════════════════════════════
-# These return JSON instead of HTML — used by mobile apps, JS, etc.
+# ─── API VIEWS ───────────────────────────────────────────────────────────────
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -262,72 +255,30 @@ from .serializers import TaskSerializer
 
 
 class TaskListAPIView(APIView):
-    """
-    API endpoint for listing all tasks and creating a new task.
-    
-    GET  /api/tasks/         → returns list of tasks as JSON
-    POST /api/tasks/         → creates a new task from JSON body
-    
-    APIView is the base class for DRF class-based views.
-    It handles authentication, permissions, and content negotiation automatically.
-    """
-    
-    # Only authenticated users can access this view
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        """
-        Return all tasks belonging to the current user.
-        Supports ?filter=completed or ?filter=pending
-        """
         tasks = Task.objects.filter(user=request.user)
-
-        # Optional filter
         filter_param = request.query_params.get('filter')
         if filter_param == 'completed':
             tasks = tasks.filter(completed=True)
         elif filter_param == 'pending':
             tasks = tasks.filter(completed=False)
-
-        # TaskSerializer converts Task objects → Python dict → JSON
-        # many=True because we're serializing a LIST of tasks
         serializer = TaskSerializer(tasks, many=True)
-
-        return Response(serializer.data)  # Returns JSON automatically
+        return Response(serializer.data)
 
     def post(self, request):
-        """
-        Create a new task from JSON data in the request body.
-        """
-        # request.data = parsed JSON body (DRF handles this automatically)
         serializer = TaskSerializer(data=request.data)
-
         if serializer.is_valid():
-            # Save the task, automatically setting the user
             serializer.save(user=request.user)
-            # 201 Created is the correct status code for new resources
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        # 400 Bad Request if validation fails
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TaskDetailAPIView(APIView):
-    """
-    API endpoint for a single task: retrieve, update, or delete.
-    
-    GET    /api/tasks/<id>/  → get one task
-    PUT    /api/tasks/<id>/  → update a task
-    DELETE /api/tasks/<id>/  → delete a task
-    """
-    
     permission_classes = [IsAuthenticated]
 
     def get_object(self, pk, user):
-        """
-        Helper method: get the task by pk AND user (security check).
-        Returns None if not found (caller handles the 404).
-        """
         try:
             return Task.objects.get(pk=pk, user=user)
         except Task.DoesNotExist:
@@ -335,24 +286,14 @@ class TaskDetailAPIView(APIView):
 
     def get(self, request, pk):
         task = self.get_object(pk, request.user)
-        if task is None:
-            return Response(
-                {'error': 'Task not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        serializer = TaskSerializer(task)
-        return Response(serializer.data)
+        if not task:
+            return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(TaskSerializer(task).data)
 
     def put(self, request, pk):
-        """Update a task with new data."""
         task = self.get_object(pk, request.user)
-        if task is None:
-            return Response(
-                {'error': 'Task not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # instance=task tells the serializer to UPDATE, not create
+        if not task:
+            return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
         serializer = TaskSerializer(task, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -360,14 +301,9 @@ class TaskDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request, pk):
-        """Partially update a task (only send the fields you want to change)."""
         task = self.get_object(pk, request.user)
-        if task is None:
-            return Response(
-                {'error': 'Task not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        # partial=True allows updating only some fields
+        if not task:
+            return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
         serializer = TaskSerializer(task, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -375,13 +311,8 @@ class TaskDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        """Delete a task."""
         task = self.get_object(pk, request.user)
-        if task is None:
-            return Response(
-                {'error': 'Task not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        if not task:
+            return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
         task.delete()
-        # 204 No Content = success but no body to return
         return Response(status=status.HTTP_204_NO_CONTENT)

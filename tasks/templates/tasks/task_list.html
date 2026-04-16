@@ -38,21 +38,6 @@
         {% for task in tasks %}
             <div class="task-card {% if task.completed %}task-completed{% endif %} {% if task.is_overdue %}task-overdue{% endif %}">
 
-                {# ── Checkbox toggle (inline on the list page) ── #}
-                <div class="task-checkbox">
-                    <form method="post" action="{% url 'task_toggle' task.pk %}">
-                        {% csrf_token %}
-                        <button type="submit" class="checkbox-btn" title="Mark as complete">
-                            {% if task.completed %}
-                                <span class="check-icon check-done">✅</span>
-                            {% else %}
-                                <span class="check-icon check-empty">⬜</span>
-                            {% endif %}
-                        </button>
-                    </form>
-                </div>
-
-                {# ── Task content ── #}
                 <div class="task-content">
                     <h3 class="task-title {% if task.completed %}strikethrough{% endif %}">
                         {{ task.title }}
@@ -60,35 +45,37 @@
                     {% if task.description %}
                         <p class="task-description">{{ task.description }}</p>
                     {% endif %}
-
                     <div class="task-meta-row">
-                        <small class="task-meta">
-                            Created: {{ task.created_at|date:"M d, Y" }}
-                        </small>
-
-                        {# ── Deadline badge ── #}
+                        <small class="task-meta">Created: {{ task.created_at|date:"M d, Y" }}</small>
                         {% if task.deadline %}
                             {% if task.completed %}
                                 <span class="deadline-badge deadline-done">
-                                    ✓ Done — was due {{ task.deadline|date:"M d, Y H:i" }}
+                                    Done — was due {{ task.deadline|date:"M d, Y H:i" }}
                                 </span>
                             {% elif task.is_overdue %}
                                 <span class="deadline-badge deadline-overdue">
-                                    ⚠️ Overdue — {{ task.deadline|date:"M d, Y H:i" }}
+                                    Overdue — {{ task.deadline|date:"M d, Y H:i" }}
                                 </span>
                             {% else %}
                                 <span class="deadline-badge deadline-upcoming">
-                                    📅 Due {{ task.deadline|date:"M d, Y H:i" }}
+                                    Due {{ task.deadline|date:"M d, Y H:i" }}
                                 </span>
                             {% endif %}
                         {% endif %}
                     </div>
                 </div>
 
-                {# ── Action buttons ── #}
                 <div class="task-actions">
-                    <a href="{% url 'task_update' task.pk %}" class="btn btn-warning btn-sm">✏️ Edit</a>
-                    <a href="{% url 'task_delete' task.pk %}" class="btn btn-danger btn-sm">🗑️ Delete</a>
+                    <form method="post" action="{% url 'task_toggle' task.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        {% if task.completed %}
+                            <button type="submit" class="btn btn-sm btn-done-undo">Undo</button>
+                        {% else %}
+                            <button type="submit" class="btn btn-sm btn-done">Done</button>
+                        {% endif %}
+                    </form>
+                    <a href="{% url 'task_update' task.pk %}" class="btn btn-warning btn-sm">Edit</a>
+                    <a href="{% url 'task_delete' task.pk %}" class="btn btn-danger btn-sm">Delete</a>
                 </div>
 
             </div>
@@ -96,7 +83,6 @@
     </div>
 {% else %}
     <div class="empty-state">
-        <div class="empty-icon">📭</div>
         <h2>No tasks found</h2>
         {% if filter != 'all' %}
             <p>No {{ filter }} tasks. <a href="{% url 'task_list' %}">View all tasks</a></p>

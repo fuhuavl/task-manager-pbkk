@@ -20,9 +20,18 @@ class RegisterForm(UserCreationForm):
 
 
 class TaskForm(forms.ModelForm):
+    share_with = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Enter username to share with (optional)',
+        }),
+        label='Share with user (username)',
+        help_text='Type a username to share this task with them.',
+    )
+
     class Meta:
         model = Task
-        # completed is removed here — toggled via checkbox on the list page instead
         fields = ['title', 'description', 'deadline']
         widgets = {
             'title': forms.TextInput(attrs={
@@ -34,7 +43,6 @@ class TaskForm(forms.ModelForm):
                 'placeholder': 'Add details (optional)...',
                 'rows': 4,
             }),
-            # datetime-local is the HTML input type for date+time pickers
             'deadline': forms.DateTimeInput(attrs={
                 'class': 'form-input',
                 'type': 'datetime-local',
@@ -48,12 +56,39 @@ class TaskForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Format existing deadline value correctly for the datetime-local input
         if self.instance and self.instance.deadline:
             self.initial['deadline'] = self.instance.deadline.strftime('%Y-%m-%dT%H:%M')
+        if self.instance and self.instance.pk:
+            existing = self.instance.shared_with.values_list('username', flat=True)
+            self.initial['share_with'] = ', '.join(existing)
 
     def clean_title(self):
         title = self.cleaned_data.get('title').strip()
         if len(title) < 3:
             raise forms.ValidationError("Title must be at least 3 characters long.")
         return title
+
+    def clean_share_with(self):
+        """
+        Validate the share_with field.
+        Accepts comma-separated usernames: "john, jane, bob"
+        """
+        raw = self.cleaned_data.get('share_with', '')
+        if not raw.strip():
+            return []
+
+        usernames = [u.strip() for u in raw.split(',') if u.strip()]
+        valid_users = []
+        errors = []
+
+        for username in usernames:
+            try:
+                user = User.objects.get(username=username)
+                valid_users.append(user)
+            except User.DoesNotExist:
+                errors.append(f'User "{username}" does not exist.')
+
+        if errors:
+            raise forms.ValidationError(errors)
+
+        return valid_users

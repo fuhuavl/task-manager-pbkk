@@ -28,8 +28,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',   # Django REST Framework for building APIs
-    'tasks',            # Our task manager app
+    'rest_framework',   
+    'tasks',            
 ]
 
 # ─── MIDDLEWARE ──────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',            # CSRF protection
+    'django.middleware.csrf.CsrfViewMiddleware',            
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -65,7 +65,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'task_manager.wsgi.application'
 
 # ─── DATABASE ────────────────────────────────────────────────────────────────
-# SQLite is a file-based database, perfect for learning.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

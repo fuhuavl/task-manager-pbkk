@@ -16,7 +16,7 @@
 
 /* ── CSS Custom Properties (Variables) ── */
 :root {
-    --primary: #4f46e5;       /* Indigo */
+    --primary: #4f46e5;       
     --primary-dark: #4338ca;
     --secondary: #6b7280;
     --success: #10b981;
@@ -35,7 +35,7 @@
 /* ── Reset & Base ── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
     line-height: 1.6;
@@ -43,6 +43,7 @@ body {
     display: flex;
     flex-direction: column;
 }
+
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -70,7 +71,12 @@ a:hover { text-decoration: underline; }
 }
 .nav-brand { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
 .nav-brand:hover { text-decoration: none; }
-.nav-links { display: flex; align-items: center; gap: 1rem; }
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .nav-link { color: var(--text-muted); font-size: 0.9rem; }
 .nav-link:hover { color: var(--text); text-decoration: none; }
 .nav-user { font-size: 0.85rem; color: var(--text-muted); }
@@ -89,6 +95,63 @@ a:hover { text-decoration: underline; }
     transition: all 0.15s;
     text-decoration: none;
 }
+
+/* ── Navbar user button — GANTI WARNA DI SINI ── */
+.btn-user {
+    background-color: #e2e8f0;
+}
+
+.btn-logout {
+    background-color: #ef4444;
+    color: white;
+}
+
+.btn-logout:hover {
+    background: #dc2626;   /* <-- warna saat hover */
+}
+
+/* ── Footer layout ── */
+.footer-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ── Samakan ukuran tombol Done, Edit, Delete ── */
+.task-actions .btn-sm,
+.task-actions .btn-done,
+.task-actions .btn-done-undo {
+    min-width: 70px;
+    text-align: center;
+    padding: 0.4rem 0;
+    font-size: 0.82rem;
+}
+
+/* ── Done / Undo buttons ── */
+.btn-done {
+    background: var(--success, #10b981);
+    color: white;
+    border: none;
+    padding: 0.3rem 0.85rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+.btn-done:hover { background: #059669; }
+
+.btn-done-undo {
+    background: var(--surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 0.3rem 0.85rem;
+    border-radius: var(--radius);
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+
+.btn-done-undo:hover { background: var(--border); }
 .btn:hover { text-decoration: none; opacity: 0.9; transform: translateY(-1px); }
 .btn-primary   { background: var(--primary); color: white; }
 .btn-secondary { background: var(--border); color: var(--text); }
@@ -262,7 +325,22 @@ textarea { resize: vertical; min-height: 100px; }
 .task-description { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.25rem; }
 .task-meta { font-size: 0.75rem; color: var(--text-muted); }
 
-.task-actions { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
+.task-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.task-actions form {
+    margin: 0;
+}
+
+.task-actions .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
 /* Empty State */
 .empty-state {
@@ -285,7 +363,7 @@ textarea { resize: vertical; min-height: 100px; }
 .api-info h3 { margin-bottom: 0.5rem; color: #1e40af; }
 .api-info ul { padding-left: 1.25rem; margin-top: 0.5rem; }
 .api-info li { margin-bottom: 0.35rem; }
-.api-info code { background: #dbeafe; padding: 0.1rem 0.35rem; border-radius: 3px; font-family: monospace; }
+.api-info code { background: #dbeafe; padding: 0.1rem 0.35rem; border-radius: 3px; font-family: inherit; }
 
 /* Delete Confirm */
 .confirm-message { margin: 1.5rem 0; }
@@ -300,12 +378,12 @@ textarea { resize: vertical; min-height: 100px; }
 
 /* ── Footer ── */
 .footer {
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    padding: 1rem 0;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.85rem;
+    margin-top: auto;
+    width: 100%;
+}
+
+.footer form {
+    margin: 0;
 }
 
 /* ── Responsive ── */
@@ -342,3 +420,92 @@ textarea { resize: vertical; min-height: 100px; }
 
 /* ── Checkbox button styling ── */
 .check-icon { font-size: 1.4rem; line-height: 1; }
+
+/* ── Calendar ── */
+.cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+.cal-month-title { font-size: 1.4rem; font-weight: 700; }
+
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 1.5rem;
+}
+.cal-header-cell {
+    background: var(--primary);
+    color: white;
+    text-align: center;
+    padding: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-radius: var(--radius);
+}
+.cal-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-height: 90px;
+    padding: 0.4rem;
+    font-size: 0.8rem;
+    vertical-align: top;
+}
+.cal-cell.cal-empty { background: transparent; border-color: transparent; }
+.cal-cell.cal-today { border: 2px solid var(--primary); background: #eff6ff; }
+.cal-day-number {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+    color: var(--text-muted);
+}
+.cal-today .cal-day-number { color: var(--primary); }
+
+.cal-task {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    font-size: 0.72rem;
+    line-height: 1.3;
+    cursor: default;
+}
+.cal-task-pending  { background: #dbeafe; color: #1e40af; }
+.cal-task-overdue  { background: #fee2e2; color: #991b1b; }
+.cal-task-done     { background: #d1fae5; color: #065f46; text-decoration: line-through; }
+.cal-task-dot      { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.cal-task-name     { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-shared-badge  { font-size: 0.65rem; background: #fef3c7; color: #92400e; padding: 1px 4px; border-radius: 3px; flex-shrink: 0; }
+
+/* Legend */
+.cal-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+.legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-muted); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-pending { background: #3b82f6; }
+.dot-overdue { background: #ef4444; }
+.dot-done    { background: #10b981; }
+.dot-shared  { background: #f59e0b; }
+
+.cal-task-list-section h3 { margin-bottom: 1rem; font-size: 1.1rem; }
+
+/* Share field */
+.share-group { border-top: 1px solid var(--border); padding-top: 1.25rem; margin-top: 0.5rem; }
+.owner-badge {
+    font-size: 0.72rem;
+    background: #fef3c7;
+    color: #92400e;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 400;
+    margin-left: 0.5rem;
+}

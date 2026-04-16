@@ -48,6 +48,7 @@ urlpatterns = [
 
     # ── API URLs (Django REST Framework) ──
     # These return JSON instead of HTML
+    path('calendar/', views.calendar_view, name='calendar'),
 
     # /api/tasks/         → GET list, POST create
     path('api/tasks/', views.TaskListAPIView.as_view(), name='api_task_list'),

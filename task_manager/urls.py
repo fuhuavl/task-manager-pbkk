@@ -15,15 +15,8 @@ from django.urls import path, include
 from django.views.generic import RedirectView
 
 urlpatterns = [
-    # Django's built-in admin panel — available at /admin/
     path('admin/', admin.site.urls),
     path('', RedirectView.as_view(url='/login/')), 
-
-    # All URLs from our 'tasks' app are included here.
-    # '' means no prefix — tasks/urls.py handles everything from root /
     path('', include('tasks.urls')),
-
-    # DRF's built-in login/logout views for the browsable API UI
-    # Available at /api-auth/login/ and /api-auth/logout/
     path('api-auth/', include('rest_framework.urls')),
 ]
