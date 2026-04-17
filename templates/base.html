@@ -11,7 +11,7 @@
 </head>
 <body>
 
-```
+
 <nav class="navbar">
     <div class="nav-container">
         <a href="{% url 'task_list' %}" class="nav-brand">Task Manager</a>
@@ -21,7 +21,11 @@
                 <a href="{% url 'task_list' %}" class="nav-link">My Tasks</a>
                 <a href="{% url 'calendar' %}" class="nav-link">Calendar</a>
 
-                <span class="btn btn-user btn-sm">👤 {{ request.user.username }}</span>
+                <span class="btn btn-user btn-sm">{{ request.user.username }}</span>
+                <form method="post" action="{% url 'logout' %}" class="nav-logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-logout btn-sm">Logout</button>
+                </form>
 
             {% else %}
                 <a href="{% url 'login' %}" class="nav-link">Login</a>
@@ -43,19 +47,26 @@
         {% block content %}{% endblock %}
     </div>
 </main>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var storageKey = 'task_manager_scroll_' + window.location.pathname + window.location.search;
+    var saved = sessionStorage.getItem(storageKey);
+    if (saved !== null) {
+        window.scrollTo(0, parseInt(saved, 10) || 0);
+        sessionStorage.removeItem(storageKey);
+    }
 
-<footer class="footer">
-    <div class="container footer-container">
-            {% if request.user.is_authenticated %} 
-            <form method="post" action="{% url 'logout' %}"> 
-                {% csrf_token %} 
-                <button type="submit" class="btn btn-logout">Logout</button> 
-            </form> 
-        {% endif %}
-        <p>Task Manager — Built with Django</p>
-    </div>
-</footer>
-```
+    var forms = document.querySelectorAll('.task-checkbox form');
+    forms.forEach(function (form) {
+        form.addEventListener('submit', function () {
+            sessionStorage.setItem(storageKey, window.scrollY);
+        });
+    });
+});
+</script>
+
+
+
 
 </body>
 </html>

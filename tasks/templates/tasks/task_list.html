@@ -40,7 +40,7 @@
                 <div class="task-checkbox">
                     <form method="post" action="{% url 'task_toggle' task.pk %}" style="display:inline;">
                         {% csrf_token %}
-                        <input type="hidden" name="next" value="#task-{{ task.pk }}">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}#task-{{ task.pk }}">
                         <button type="submit" class="checkbox-btn {% if task.completed %}checkbox-checked{% endif %}" aria-label="Toggle task completion"></button>
                     </form>
                 </div>
@@ -60,11 +60,11 @@
                         {% if task.deadline %}
                             {% if task.completed %}
                                 <span class="deadline-badge deadline-done">
-                                    Done — was due {{ task.deadline|date:"M d, Y H:i" }}
+                                    Done: due {{ task.deadline|date:"M d, Y H:i" }}
                                 </span>
                             {% elif task.is_overdue %}
                                 <span class="deadline-badge deadline-overdue">
-                                    Overdue — {{ task.deadline|date:"M d, Y H:i" }}
+                                    Overdue: {{ task.deadline|date:"M d, Y H:i" }}
                                 </span>
                             {% else %}
                                 <span class="deadline-badge deadline-upcoming">

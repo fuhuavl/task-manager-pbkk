@@ -77,6 +77,11 @@ a:hover { text-decoration: underline; }
     gap: 10px;
 }
 
+.nav-links .nav-logout-form {
+    display: inline-flex;
+    margin: 0;
+}
+
 .nav-link { color: var(--text-muted); font-size: 0.9rem; }
 .nav-link:hover { color: var(--text); text-decoration: none; }
 .nav-user { font-size: 0.85rem; color: var(--text-muted); }
@@ -515,6 +520,9 @@ textarea { resize: vertical; min-height: 100px; }
 /* Share field */
 .share-group { border-top: 1px solid var(--border); padding-top: 1.25rem; margin-top: 0.5rem; }
 .owner-badge {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
     font-size: 0.72rem;
     background: #fef3c7;
     color: #92400e;

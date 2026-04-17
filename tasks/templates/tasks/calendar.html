@@ -68,10 +68,11 @@
     {% if tasks_by_day %}
         {% for task_day, day_tasks in tasks_by_day.items %}
             {% for task in day_tasks %}
-                <div class="task-card {% if task.completed %}task-completed{% elif task.is_overdue %}task-overdue{% endif %}">
+                <div id="task-{{ task.pk }}" class="task-card {% if task.completed %}task-completed{% elif task.is_overdue %}task-overdue{% endif %}">
                     <div class="task-checkbox">
                         <form method="post" action="{% url 'task_toggle' task.pk %}">
                             {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
                             <button type="submit" class="checkbox-btn {% if task.completed %}checkbox-checked{% endif %}" aria-label="Toggle task completion"></button>
                         </form>
                     </div>
