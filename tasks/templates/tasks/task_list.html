@@ -36,7 +36,14 @@
 {% if tasks %}
     <div class="task-list">
         {% for task in tasks %}
-            <div class="task-card {% if task.completed %}task-completed{% endif %} {% if task.is_overdue %}task-overdue{% endif %}">
+            <div id="task-{{ task.pk }}" class="task-card {% if task.completed %}task-completed{% endif %} {% if task.is_overdue %}task-overdue{% endif %}">
+                <div class="task-checkbox">
+                    <form method="post" action="{% url 'task_toggle' task.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="#task-{{ task.pk }}">
+                        <button type="submit" class="checkbox-btn {% if task.completed %}checkbox-checked{% endif %}" aria-label="Toggle task completion"></button>
+                    </form>
+                </div>
 
                 <div class="task-content">
                     <h3 class="task-title {% if task.completed %}strikethrough{% endif %}">
@@ -47,6 +54,9 @@
                     {% endif %}
                     <div class="task-meta-row">
                         <small class="task-meta">Created: {{ task.created_at|date:"M d, Y" }}</small>
+                        {% if task.user != request.user %}
+                            <span class="task-meta">Shared by {{ task.user.username }}</span>
+                        {% endif %}
                         {% if task.deadline %}
                             {% if task.completed %}
                                 <span class="deadline-badge deadline-done">
@@ -66,18 +76,11 @@
                 </div>
 
                 <div class="task-actions">
-                    <form method="post" action="{% url 'task_toggle' task.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        {% if task.completed %}
-                            <button type="submit" class="btn btn-sm btn-done-undo">Undo</button>
-                        {% else %}
-                            <button type="submit" class="btn btn-sm btn-done">Done</button>
-                        {% endif %}
-                    </form>
-                    <a href="{% url 'task_update' task.pk %}" class="btn btn-warning btn-sm">Edit</a>
-                    <a href="{% url 'task_delete' task.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                    {% if task.user == request.user %}
+                        <a href="{% url 'task_update' task.pk %}" class="btn btn-warning btn-sm">Edit</a>
+                        <a href="{% url 'task_delete' task.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                    {% endif %}
                 </div>
-
             </div>
         {% endfor %}
     </div>

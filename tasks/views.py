@@ -71,16 +71,21 @@ def logout_view(request):
 
 @login_required
 def task_list_view(request):
-    tasks = Task.objects.filter(user=request.user)
+    own_tasks = Task.objects.filter(user=request.user)
+    shared_tasks = Task.objects.filter(shared_with=request.user)
+
     filter_param = request.GET.get('filter', 'all')
     if filter_param == 'completed':
-        tasks = tasks.filter(completed=True)
+        own_tasks = own_tasks.filter(completed=True)
+        shared_tasks = shared_tasks.filter(completed=True)
     elif filter_param == 'pending':
-        tasks = tasks.filter(completed=False)
+        own_tasks = own_tasks.filter(completed=False)
+        shared_tasks = shared_tasks.filter(completed=False)
 
-    all_tasks = Task.objects.filter(user=request.user)
-    total_count = all_tasks.count()
-    completed_count = all_tasks.filter(completed=True).count()
+    tasks = (own_tasks | shared_tasks).distinct().order_by('-created_at')
+
+    total_count = own_tasks.count() + shared_tasks.count()
+    completed_count = own_tasks.filter(completed=True).count() + shared_tasks.filter(completed=True).count()
     pending_count = total_count - completed_count
 
     context = {
@@ -175,6 +180,13 @@ def task_toggle_view(request, pk):
         task.save()
         status = "completed" if task.completed else "marked as pending"
         messages.success(request, f'Task "{task.title}" {status}.')
+        next_url = request.POST.get('next')
+        if next_url and next_url.startswith('#'):
+            referrer = request.META.get('HTTP_REFERER')
+            if referrer:
+                return redirect(referrer + next_url)
+            return redirect('task_list')
+        return redirect(next_url or request.META.get('HTTP_REFERER', 'task_list'))
     return redirect(request.META.get('HTTP_REFERER', 'task_list'))
 
 

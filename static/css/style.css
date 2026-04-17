@@ -121,7 +121,7 @@ a:hover { text-decoration: underline; }
 .task-actions .btn-sm,
 .task-actions .btn-done,
 .task-actions .btn-done-undo {
-    min-width: 70px;
+    width: 70px;
     text-align: center;
     padding: 0.4rem 0;
     font-size: 0.82rem;
@@ -132,7 +132,7 @@ a:hover { text-decoration: underline; }
     background: var(--success, #10b981);
     color: white;
     border: none;
-    padding: 0.3rem 0.85rem;
+    /* padding: 0.3rem 0.85rem; */
     border-radius: var(--radius);
     font-weight: 600;
     cursor: pointer;
@@ -144,7 +144,7 @@ a:hover { text-decoration: underline; }
     background: var(--surface);
     color: var(--text-muted);
     border: 1px solid var(--border);
-    padding: 0.3rem 0.85rem;
+    /* padding: 0.3rem 0.85rem; */
     border-radius: var(--radius);
     font-weight: 500;
     cursor: pointer;
@@ -310,14 +310,28 @@ textarea { resize: vertical; min-height: 100px; }
 
 .task-checkbox { padding-top: 0.2rem; }
 .checkbox-btn {
-    background: none;
-    border: none;
-    font-size: 1.3rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    background: transparent;
+    border: 2px solid var(--border);
+    border-radius: 0.35rem;
     cursor: pointer;
     padding: 0;
     line-height: 1;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
-.checkbox-btn:hover { transform: scale(1.2); }
+.checkbox-btn:hover {
+    transform: scale(1.05);
+    border-color: var(--primary);
+}
+.checkbox-btn.checkbox-checked {
+    background: var(--success, #10b981);
+    border-color: var(--success, #10b981);
+}
+.checkbox-btn.checkbox-checked:hover {
+    background: #059669;
+    border-color: #059669;
+}
 
 .task-content { flex: 1; min-width: 0; }
 .task-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
@@ -509,3 +523,4 @@ textarea { resize: vertical; min-height: 100px; }
     font-weight: 400;
     margin-left: 0.5rem;
 }
+
